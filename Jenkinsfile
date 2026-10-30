@@ -2,23 +2,23 @@
 pipeline {
     agent any
 
-environment {
-    JAVA_HOME = '/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home'
-    PATH = "${JAVA_HOME}/bin:/Users/saiganesh/.docker/bin:/opt/homebrew/bin:${env.PATH}"
+    environment {
+        JAVA_HOME = '/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home'
+        PATH = "${JAVA_HOME}/bin:/Users/saiganesh/.docker/bin:/opt/homebrew/bin:${env.PATH}"
 
-    DOCKER_IMAGE = 'saiganesh690/calculator-api'
-    IMAGE_TAG = "${BUILD_NUMBER}"
-}
+        DOCKER_IMAGE = 'saiganesh690/calculator-api'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+    }
 
     stages {
-        // Stage 1: Get the latest code from GitHub
+        // Stage 1: Checkout
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        // Stage 2: Verify Java and build the application
+        // Stage 2: Build application
         stage('Build') {
             steps {
                 sh '''
@@ -33,7 +33,7 @@ environment {
             }
         }
 
-        // Stage 3: Run tests and publish JUnit reports
+        // Stage 3: Run tests
         stage('Test') {
             steps {
                 sh './mvnw test'
@@ -46,19 +46,8 @@ environment {
             }
         }
 
-        // Stage 4: Build and tag Docker image
-        stage('Docker Build') {
-            steps {
-                sh '''
-                    docker build \
-                        -t ${DOCKER_IMAGE}:${IMAGE_TAG} \
-                        -t ${DOCKER_IMAGE}:latest .
-                '''
-            }
-        }
-
-        // Stage 5: Push images to Docker Hub securely
-        stage('Push') {
+        // Stage 4: Build and push multi-platform Docker images
+        stage('Docker Build & Push') {
             steps {
                 withCredentials([
                     usernamePassword(
@@ -68,13 +57,17 @@ environment {
                     )
                 ]) {
                     sh '''
+                        set -e
                         set +x
 
                         echo "$DOCKERHUB_TOKEN" | docker login \
                             -u "$DOCKERHUB_USER" --password-stdin
 
-                        docker push ${DOCKER_IMAGE}:${IMAGE_TAG}
-                        docker push ${DOCKER_IMAGE}:latest
+                        docker buildx build \
+                            --platform linux/amd64,linux/arm64 \
+                            -t ${DOCKER_IMAGE}:${IMAGE_TAG} \
+                            -t ${DOCKER_IMAGE}:latest \
+                            --push .
 
                         docker logout
                     '''
@@ -82,28 +75,36 @@ environment {
             }
         }
 
-        // Stage 6: Deploy using Docker Compose and verify health
+        // Stage 5: Deploy using Docker Compose
         stage('Deploy') {
             steps {
-               sh '''
-    export IMAGE_TAG=${IMAGE_TAG}
+                sh '''
+                    set -e
+                    export IMAGE_TAG=${IMAGE_TAG}
 
-    docker compose pull
-    docker compose up -d --remove-orphans
+                    echo "Pulling Docker images..."
+                    docker compose pull
 
-    for i in $(seq 1 30); do
-        if curl -fsS http://localhost:8081/actuator/health; then
-            echo "Application is healthy."
-            exit 0
-        fi
-        sleep 2
-    done
+                    echo "Starting containers..."
+                    docker compose up -d --remove-orphans
 
-    echo "Application health check failed."
-    docker compose ps
-    docker compose logs --tail=100
-    exit 1
-'''
+                    echo "Checking application health..."
+
+                    for i in $(seq 1 30); do
+                        if curl -fsS \
+                            http://localhost:8081/actuator/health; then
+                            echo "Application is healthy."
+                            exit 0
+                        fi
+
+                        sleep 2
+                    done
+
+                    echo "Application health check failed."
+                    docker compose ps
+                    docker compose logs --tail=100
+                    exit 1
+                '''
             }
         }
     }

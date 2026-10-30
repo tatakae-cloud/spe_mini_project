@@ -1,6 +1,6 @@
+
 services:
   calculator:
-    platform: linux/amd64
     image: saiganesh690/calculator-api:${IMAGE_TAG:-latest}
     container_name: calculator-container
     expose:
@@ -32,6 +32,3 @@ services:
 networks:
   calculator-network:
     driver: bridge
-
-# checking 
-# check check 
