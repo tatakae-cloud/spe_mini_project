@@ -2,9 +2,9 @@
 pipeline {
     agent any
 
-   environment {
+environment {
     JAVA_HOME = '/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home'
-    PATH = "${JAVA_HOME}/bin:/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
+    PATH = "${JAVA_HOME}/bin:/Users/saiganesh/.docker/bin:/opt/homebrew/bin:${env.PATH}"
 
     DOCKER_IMAGE = 'saiganesh690/calculator-api'
     IMAGE_TAG = "${BUILD_NUMBER}"
