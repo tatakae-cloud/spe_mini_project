@@ -2,13 +2,13 @@
 pipeline {
     agent any
 
-    environment {
-        JAVA_HOME = '/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home'
-        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+   environment {
+    JAVA_HOME = '/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home'
+    PATH = "${JAVA_HOME}/bin:/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
 
-        DOCKER_IMAGE = 'saiganesh690/calculator-api'
-        IMAGE_TAG = "${BUILD_NUMBER}"
-    }
+    DOCKER_IMAGE = 'saiganesh690/calculator-api'
+    IMAGE_TAG = "${BUILD_NUMBER}"
+}
 
     stages {
         // Stage 1: Get the latest code from GitHub
