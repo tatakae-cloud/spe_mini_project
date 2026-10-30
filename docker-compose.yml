@@ -1,7 +1,7 @@
 services:
   calculator:
     platform: linux/amd64
-    image: svnsaisathvik/calculator-api:${IMAGE_TAG:-2.0}
+    image: saiganesh690/calculator-api:${IMAGE_TAG:-latest}
     container_name: calculator-container
     expose:
       - "8080"

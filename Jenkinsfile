@@ -85,25 +85,25 @@ environment {
         // Stage 6: Deploy using Docker Compose and verify health
         stage('Deploy') {
             steps {
-                sh '''
-                    docker compose pull
-                    docker compose up -d --remove-orphans
+               sh '''
+    export IMAGE_TAG=${IMAGE_TAG}
 
-                    for i in $(seq 1 30); do
-                        if curl -fsS \
-                            http://localhost:8081/actuator/health; then
-                            echo "Application is healthy."
-                            exit 0
-                        fi
+    docker compose pull
+    docker compose up -d --remove-orphans
 
-                        sleep 2
-                    done
+    for i in $(seq 1 30); do
+        if curl -fsS http://localhost:8081/actuator/health; then
+            echo "Application is healthy."
+            exit 0
+        fi
+        sleep 2
+    done
 
-                    echo "Application health check failed."
-                    docker compose ps
-                    docker compose logs --tail=100
-                    exit 1
-                '''
+    echo "Application health check failed."
+    docker compose ps
+    docker compose logs --tail=100
+    exit 1
+'''
             }
         }
     }
