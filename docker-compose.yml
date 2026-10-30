@@ -1,6 +1,6 @@
-
 services:
   calculator:
+    platform: linux/amd64
     image: svnsaisathvik/calculator-api:${IMAGE_TAG:-2.0}
     container_name: calculator-container
     expose:
