@@ -3,6 +3,9 @@ pipeline {
     agent any
 
     environment {
+        JAVA_HOME = '/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home'
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+
         DOCKER_IMAGE = 'saiganesh690/calculator-api'
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
@@ -15,10 +18,18 @@ pipeline {
             }
         }
 
-        // Stage 2: Build the application
+        // Stage 2: Verify Java and build the application
         stage('Build') {
             steps {
-                sh './mvnw clean package -DskipTests'
+                sh '''
+                    echo "Checking Java configuration..."
+                    echo "JAVA_HOME=$JAVA_HOME"
+                    java -version
+                    javac -version
+
+                    echo "Building application..."
+                    ./mvnw clean package -DskipTests
+                '''
             }
         }
 
@@ -29,12 +40,13 @@ pipeline {
             }
             post {
                 always {
-                    junit 'target/surefire-reports/*.xml'
+                    junit allowEmptyResults: true,
+                          testResults: 'target/surefire-reports/*.xml'
                 }
             }
         }
 
-        // Stage 4: Build and tag the Docker image
+        // Stage 4: Build and tag Docker image
         stage('Docker Build') {
             steps {
                 sh '''
@@ -57,6 +69,7 @@ pipeline {
                 ]) {
                     sh '''
                         set +x
+
                         echo "$DOCKERHUB_TOKEN" | docker login \
                             -u "$DOCKERHUB_USER" --password-stdin
 
@@ -82,6 +95,7 @@ pipeline {
                             echo "Application is healthy."
                             exit 0
                         fi
+
                         sleep 2
                     done
 
@@ -94,13 +108,12 @@ pipeline {
         }
     }
 
-
     post {
         success {
             echo 'Pipeline completed successfully!'
 
             emailext(
-                to: 'saisathviksvn@gmail.com', // Change to your recipient email
+                to: 'saisathviksvn@gmail.com',
                 subject: "SUCCESS: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
                 body: """
                     <h2>Pipeline Succeeded!</h2>
@@ -117,7 +130,7 @@ pipeline {
             echo 'Pipeline failed!'
 
             emailext(
-                to: 'saisathviksvn@gmail.com', // Change to your recipient email
+                to: 'saisathviksvn@gmail.com',
                 subject: "FAILURE: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
                 body: """
                     <h2>Pipeline Failed!</h2>
