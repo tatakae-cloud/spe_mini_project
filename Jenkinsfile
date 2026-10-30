@@ -3,7 +3,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'svnsaisathvik/calculator-api'
+        DOCKER_IMAGE = 'saiganesh690/calculator-api'
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
